@@ -1,0 +1,10 @@
+---
+- hosts: web
+  become: true
+  vars_prompt:
+    - name: "user_password"
+      prompt: "Введите пароль для пользователя {{ new_user }}"
+      private: yes
+  roles:
+    - create_user
+
