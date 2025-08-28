@@ -1,4 +1,4 @@
 ---
-- hosts: web
+- hosts: bkp
   roles:
-    - { role: 'hostname'}
+    - { role: 'swap'}
