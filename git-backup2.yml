@@ -1,0 +1,19 @@
+---
+- name: Auto commit and push infra folder
+  hosts: localhost
+  tasks:
+    - name: Ensure git repo exists
+      shell: |
+        cd /infra && git rev-parse --is-inside-work-tree
+      register: git_check
+      ignore_errors: true
+
+    - name: Init repo if missing
+      shell: |
+        cd /infra && git init && git remote add origin git@gitlab.com:dgl-lesson-devops/my_infrastructure.git
+      when: git_check.rc != 0
+
+    - name: Git add, commit, push
+      shell: |
+        cd /infra &&         git add . &&         git -c user.name='syslog-bot' -c user.email='bot@localhost' commit -m "Auto-backup from syslog: $(date)" &&  || true       git push origin master
+      ignore_errors: true
