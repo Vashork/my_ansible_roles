@@ -15,5 +15,5 @@
 
     - name: Git add, commit, push
       shell: |
-        cd /infra &&         git add . &&         git -c user.name='syslog-bot' -c user.email='bot@localhost' commit -m "Auto-backup from syslog: $(date)" &&         git push origin master
+        cd /infra &&         git add . &&         git -c user.name='syslog-bot' -c user.email='bot@localhost' commit -m "Auto-backup from syslog: $(date)" &&  || true       git push origin master
       ignore_errors: true
