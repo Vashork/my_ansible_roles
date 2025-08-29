@@ -2,4 +2,4 @@
 - hosts: web
   become: true
   roles:
-    - { role: 'servernames'}
+    - { role: 'install2'}
