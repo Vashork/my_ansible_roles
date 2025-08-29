@@ -8,15 +8,15 @@
       - /infra/roles
 
   tasks:
-    - name: Commit and push in git directories
+    - name: Check for changes, commit and push
       shell: |
         git add .
         if ! git diff-index --quiet HEAD --; then
           git commit -m "{{ current_date }} - автоматический коммит"
           git push origin master
-          echo "Pushed changes in {{ item }}"
+          echo "pushed"
         else
-          echo "No changes to commit in {{ item }}"
+          echo "no changes"
         fi
       args:
         chdir: "{{ item }}"
@@ -24,7 +24,7 @@
       register: git_result
       changed_when: false
 
-    - name: Show git results
+    - name: Show concise results
       debug:
-        msg: "{{ item.stdout }}"
+        msg: "{{ item.item }}: {{ item.stdout }}"
       loop: "{{ git_result.results }}"
