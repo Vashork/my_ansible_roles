@@ -14,18 +14,11 @@
         if ! git diff-index --quiet HEAD --; then
           git commit -m "{{ current_date }} - автоматический коммит"
           git push origin master
-          printf "В папке %s изменения были запушены\n" "{{ item }}"
+          echo "В папке {{ item }} изменения были запушены"
         else
-          printf "В папке %s нет изменений для коммита\n" "{{ item }}"
+          echo "В папке {{ item }} нет изменений для коммита"
         fi
       args:
         chdir: "{{ item }}"
       loop: "{{ git_dirs }}"
       changed_when: false
-      register: git_result
-
-    - name: Print results directly
-      debug:
-        msg: "{{ item.stdout_lines[-1] }}"
-      loop: "{{ git_result.results }}"
-      when: false
