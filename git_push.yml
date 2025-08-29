@@ -26,5 +26,5 @@
 
     - name: Show concise git results
       debug:
-        msg: "{{ item.stdout }}"
+        msg: "{{ item.stdout_lines[-1] }}"
       loop: "{{ git_result.results }}"
