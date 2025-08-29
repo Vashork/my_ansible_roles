@@ -1,0 +1,93 @@
+---
+- name: Автоматический бэкап изменений в Git
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Проверяем наличие папки /infra/
+      ansible.builtin.stat:
+        path: /infra/
+      register: infra_dir
+
+    - name: Проверяем наличие папки /infra/roles/
+      ansible.builtin.stat:
+        path: /infra/roles/
+      register: roles_dir
+
+    - name: Бэкап для папки /infra/
+      block:
+        - name: Переходим в /infra/ и добавляем все файлы в git
+          ansible.builtin.shell:
+            cmd: |
+              cd /infra/
+              git add .
+          args:
+            chdir: /infra/
+
+        - name: Проверяем есть ли изменения для коммита в /infra/
+          ansible.builtin.shell:
+            cmd: |
+              cd /infra/
+              git status --porcelain
+          args:
+            chdir: /infra/
+          register: infra_changes
+          changed_when: false
+
+        - name: Коммитим изменения в /infra/ если они есть
+          ansible.builtin.shell:
+            cmd: |
+              cd /infra/
+              git commit -m "{{ ansible_date_time.date }} - автоматический коммит"
+              git push origin master
+          args:
+            chdir: /infra/
+          when: infra_changes.stdout != ""
+
+        - name: Сообщаем если нет изменений в /infra/
+          ansible.builtin.debug:
+            msg: "В папке /infra/ нет изменений для коммита"
+          when: infra_changes.stdout == ""
+
+      when: infra_dir.stat.exists and infra_dir.stat.isdir
+
+    - name: Бэкап для папки /infra/roles/
+      block:
+        - name: Переходим в /infra/roles/ и добавляем все файлы в git
+          ansible.builtin.shell:
+            cmd: |
+              cd /infra/roles/
+              git add .
+          args:
+            chdir: /infra/roles/
+
+        - name: Проверяем есть ли изменения для коммита в /infra/roles/
+          ansible.builtin.shell:
+            cmd: |
+              cd /infra/roles/
+              git status --porcelain
+          args:
+            chdir: /infra/roles/
+          register: roles_changes
+          changed_when: false
+
+        - name: Коммитим изменения в /infra/roles/ если они есть
+          ansible.builtin.shell:
+            cmd: |
+              cd /infra/roles/
+              git commit -m "{{ ansible_date_time.date }} - автоматический коммит"
+              git push origin master
+          args:
+            chdir: /infra/roles/
+          when: roles_changes.stdout != ""
+
+        - name: Сообщаем если нет изменений в /infra/roles/
+          ansible.builtin.debug:
+            msg: "В папке /infra/roles/ нет изменений для коммита"
+          when: roles_changes.stdout == ""
+
+      when: roles_dir.stat.exists and roles_dir.stat.isdir
+
+    - name: Сообщение если папки не существуют
+      ansible.builtin.debug:
+        msg: "Папка /infra/ или /infra/roles/ не существует"
+      when: not infra_dir.stat.exists or not roles_dir.stat.exists
