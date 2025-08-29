@@ -3,27 +3,28 @@
   gather_facts: false
   vars:
     current_date: "{{ lookup('pipe','date +%Y-%m-%d') }}"
-  tasks:
-    - name: Commit and push in /infra/
-      shell: |
-        git add .
-        if ! git diff-index --quiet HEAD --; then
-          git commit -m "{{ current_date }} - автоматический коммит"
-          git push origin master
-        else
-          echo "No changes to commit in /infra/"
-        fi
-      args:
-        chdir: /infra
+    git_dirs:
+      - /infra
+      - /infra/roles
 
-    - name: Commit and push in /infra/roles/
+  tasks:
+    - name: Commit and push in git directories
       shell: |
         git add .
         if ! git diff-index --quiet HEAD --; then
           git commit -m "{{ current_date }} - автоматический коммит"
           git push origin master
+          echo "Pushed changes in {{ item }}"
         else
-          echo "No changes to commit in /infra/roles/"
+          echo "No changes to commit in {{ item }}"
         fi
       args:
-        chdir: /infra/roles
+        chdir: "{{ item }}"
+      loop: "{{ git_dirs }}"
+      register: git_result
+      changed_when: false
+
+    - name: Show git results
+      debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ git_result.results }}"
