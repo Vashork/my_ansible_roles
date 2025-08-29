@@ -1,4 +1,5 @@
 ---
 - hosts: bkp
+  become: true
   roles:
-    - { role: 'swap'}
+    - { role: 'servernames'}
