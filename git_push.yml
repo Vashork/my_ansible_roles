@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Автоматический бэкап изменений в Git
+  hosts: localhost
   gather_facts: false
   vars:
     current_date: "{{ lookup('pipe','date +%Y-%m-%d') }}"
@@ -8,17 +9,50 @@
       - /infra/roles
 
   tasks:
-    - name: Commit and push in git directories
-      shell: |
-        git add .
-        if ! git diff-index --quiet HEAD --; then
-          git commit -m "{{ current_date }} - автоматический коммит"
-          git push origin master
-          echo "В папке {{ item }} изменения были запушены"
-        else
-          echo "В папке {{ item }} нет изменений для коммита"
-        fi
-      args:
-        chdir: "{{ item }}"
+    - name: Проверяем и бэкапим изменения в Git
+      block:
+        - name: Проверяем наличие папки {{ item }}
+          stat:
+            path: "{{ item }}"
+          register: folder_stat
+
+        - name: Добавляем все файлы в git
+          shell: git add .
+          args:
+            chdir: "{{ item }}"
+          when: folder_stat.stat.exists and folder_stat.stat.isdir
+
+        - name: Проверяем есть ли изменения для коммита
+          shell: git status --porcelain
+          args:
+            chdir: "{{ item }}"
+          register: changes
+          changed_when: false
+          when: folder_stat.stat.exists and folder_stat.stat.isdir
+
+        - name: Коммитим изменения если они есть
+          shell: |
+            git commit -m "{{ current_date }} - автоматический коммит"
+            git push origin master
+          args:
+            chdir: "{{ item }}"
+          when: folder_stat.stat.exists and folder_stat.stat.isdir and changes.stdout != ""
+
+        - name: Сообщаем результат
+          debug:
+            msg: >
+              {% if changes.stdout != "" %}
+              В папке {{ item }} изменения были запушены
+              {% else %}
+              В папке {{ item }} нет изменений для коммита
+              {% endif %}
+          when: folder_stat.stat.exists and folder_stat.stat.isdir
+
+        - name: Сообщаем если папка не существует
+          debug:
+            msg: "Папка {{ item }} не существует"
+          when: not folder_stat.stat.exists
+
       loop: "{{ git_dirs }}"
-      changed_when: false
+      loop_control:
+        label: "{{ item }}"

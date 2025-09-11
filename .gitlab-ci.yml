@@ -1,0 +1,30 @@
+# .gitlab-ci.yml
+stages: [mirror]
+
+variables:
+  GIT_STRATEGY: fetch     # не пересобирать клон каждый раз
+  GIT_DEPTH: "0"          # нужна полная история, иначе теги/ветки могут не уйти
+
+mirror_to_github:
+  stage: mirror
+  image: alpine:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  before_script:
+    - apk add --no-cache git git-lfs openssh-client
+    - git lfs install
+    - git config --global user.email "ci-bot@example.com"
+    - git config --global user.name "gitlab-ci-bot"
+    # На всякий: убеждаемся, что у нас есть все ветки/теги
+    - git fetch --all --tags --prune
+  script:
+    - git remote remove github 2>/dev/null || true
+    - git remote add github "https://${GITHUB_USER}:${GITHUB_TOKEN}@${GITHUB_REPO_URL#https://}"
+    # Пушим все ветки и теги
+    - git push github --all
+    - git push github --tags
+    # LFS-объекты (если используешь LFS)
+    - git lfs fetch --all
+    - git lfs push --all github
